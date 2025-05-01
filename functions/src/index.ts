@@ -4,10 +4,14 @@ import { startGame } from "./startGame";
 import { answerQuestion } from "./answerQuestion";
 import { acquireClient } from "./acquireClient";
 import { useBonus } from "./useBonus";
+import { endGame } from "./endGame";
 import { logger } from "./logger";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
+
+// Export Firestore for use in other modules
+export const db = admin.firestore();
 
 // Export Cloud Functions
 export const startGameFunction = functions.https.onCall(async (data, context) => {
@@ -117,3 +121,5 @@ export const useBonusFunction = functions.https.onCall(async (data, context) => 
     );
   }
 });
+
+export const endGameFunction = endGame;

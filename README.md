@@ -20,7 +20,7 @@ Pharmacie Battle is a real-time multiplayer quiz game built with React, TypeScri
 - **Backend**: Firebase (Authentication, Firestore, Cloud Functions)
 - **Build Tool**: Vite
 - **Configuration**: vite.config.ts, tailwind.config.js, postcss.config.js
-- **Error Handling**: Centralized error handling via Firebase logging
+- **Error Handling**: Centralized error handling via Firebase logging (Cloud Functions use `FIREBASE_LOG_BUCKET` to write `YYYY-MM-DD.log` files into your Storage bucket)
 
 ## Project Structure
 
@@ -66,7 +66,8 @@ pharmacie-battle/
 │   │   ├── startGame.ts           # Game initialization
 │   │   ├── answerQuestion.ts      # Answer processing
 │   │   ├── acquireClient.ts       # Client acquisition
-│   │   └── useBonus.ts            # Bonus application
+│   │   ├── useBonus.ts            # Bonus application
+│   │   └── endGame.ts             # Game completion and leaderboard update
 │   ├── package.json               # Functions dependencies
 │   ├── tsconfig.json              # TypeScript configuration for functions
 │   └── .eslintrc.js               # ESLint configuration for functions
@@ -89,7 +90,7 @@ pharmacie-battle/
 2. Install dependencies: `npm install`
 3. Create a Firebase project and update `.env` with your Firebase configuration:
 
-   ```
+   ```env
    VITE_FIREBASE_API_KEY=...
    VITE_FIREBASE_AUTH_DOMAIN=...
    VITE_FIREBASE_PROJECT_ID=...
@@ -106,7 +107,7 @@ pharmacie-battle/
 6. Initialize Firebase emulators with specific services:
 
    ```bash
-   firebase init emulators --only auth,firestore,functions,storage
+   firebase emulators:start --only auth,firestore,functions,hosting,storage,ui
    ```
 
 7. Start the development server: `npm run dev`
@@ -160,11 +161,13 @@ pharmacie-battle/
 
 ## Console Logging
 
-In development, all console logs are preserved. In production, only `console.log` statements are automatically stripped using `babel-plugin-transform-remove-console` configured in `vite.config.ts`. Note that `console.error` and `console.warn` are preserved for debugging critical issues.
+In development, all console logs are preserved. In production, only `console.log` statements are automatically stripped using `babel-plugin-transform-remove-console` configured in `vite.config.ts`. 
+
+**Note:** `console.error` and `console.warn` are intentionally preserved for debugging critical issues in production.
 
 If you want to remove all console output in production, update the babel plugins in `vite.config.ts`:
 
-```js
+```javascript
 plugins: ['transform-remove-console', 'transform-remove-debugger']
 ```
 
@@ -221,6 +224,7 @@ The `firebase.json` file includes configuration for Firestore, Functions, Hostin
     "ui": { "enabled": true }
   }
 }
+```
 ```
 
 ## Deployment
