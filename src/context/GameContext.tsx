@@ -3,11 +3,27 @@ import { auth, db } from '../api/firebase';
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 
 // Define types
+type Client = {
+  id: string;
+  name: string;
+  difficulty: number;
+  points: number;
+};
+
+type Question = {
+  id: string;
+  text: string;
+  answer: string;
+  points: number;
+};
+
 type Player = {
   id: string;
   name: string;
   score: number;
   bonuses: string[];
+  currentClient?: Client;
+  activeBonus?: string;
 };
 
 type GameState = {
@@ -16,6 +32,15 @@ type GameState = {
   currentRound: number;
   currentQuestion: string | null;
   players: Player[];
+  questions?: Question[];
+  availableClients?: Client[];
+  hints?: Record<string, string>;
+  answers?: Record<string, Record<string, any>>;
+  startTime?: any;
+  endTime?: any;
+  roundStartTime?: any;
+  roundEndTime?: any;
+  currentPlayer?: Player | null;
 };
 
 type GameContextType = {
@@ -25,8 +50,9 @@ type GameContextType = {
   createGame: () => Promise<string>;
   joinGame: (gameId: string, playerName: string) => Promise<void>;
   startGame: () => Promise<void>;
-  submitAnswer: (answer: string) => Promise<boolean>;
-  useBonus: (bonusId: string, targetPlayerId?: string) => Promise<void>;
+  submitAnswer: (answer: string) => Promise<{isCorrect: boolean; points?: number; correctAnswer?: string}>;
+  useBonus: (bonusId: string, targetPlayerId?: string) => Promise<{success: boolean; effect?: string}>;
+  acquireClient: () => Promise<{success: boolean; client?: Client}>;
 };
 
 // Create context
@@ -157,17 +183,170 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Submit an answer
-  const submitAnswer = async (_answer: string): Promise<boolean> => {
-    // This would typically call a cloud function to validate the answer
-    // For now, we'll just return a placeholder
-    return Promise.resolve(false);
+  const submitAnswer = async (answer: string): Promise<{isCorrect: boolean; points?: number; correctAnswer?: string}> => {
+    if (!gameState || !auth.currentUser) {
+      throw new Error('Game not active or user not authenticated');
+    }
+    
+    try {
+      // In a real implementation, this would call a Firebase Cloud Function
+      // For now, we'll simulate the response
+      const currentQuestion = gameState.questions?.find(q => q.id === gameState.currentQuestion);
+      
+      if (!currentQuestion) {
+        throw new Error('No active question');
+      }
+      
+      const isCorrect = answer.toLowerCase() === currentQuestion.answer.toLowerCase();
+      let points = 0;
+      
+      if (isCorrect) {
+        points = currentQuestion.points;
+        
+        // Check if player has active bonus
+        if (currentPlayer?.activeBonus === 'doubles_points') {
+          points *= 2;
+        }
+        
+        // Update local player score (in a real app, this would be done by the cloud function)
+        if (currentPlayer) {
+          const updatedPlayers = gameState.players.map(p => {
+            if (p.id === currentPlayer.id) {
+              return { ...p, score: (p.score || 0) + points };
+            }
+            return p;
+          });
+          
+          // This is just for the demo - in a real app, the cloud function would update Firestore
+          setGameState(prev => prev ? { ...prev, players: updatedPlayers } : null);
+        }
+      }
+      
+      return {
+        isCorrect,
+        points: isCorrect ? points : 0,
+        correctAnswer: isCorrect ? undefined : currentQuestion.answer
+      };
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      throw error;
+    }
   };
 
   // Use a bonus
-  const useBonus = async (_bonusId: string, _targetPlayerId?: string): Promise<void> => {
-    // This would typically call a cloud function to apply the bonus
-    // For now, we'll just return a placeholder
-    return Promise.resolve();
+  const useBonus = async (bonusId: string, targetPlayerId?: string): Promise<{success: boolean; effect?: string}> => {
+    if (!gameState || !auth.currentUser || !currentPlayer) {
+      throw new Error('Game not active or user not authenticated');
+    }
+    
+    // Check if player has the bonus
+    if (!currentPlayer.bonuses || !currentPlayer.bonuses.includes(bonusId)) {
+      throw new Error('You do not have this bonus');
+    }
+    
+    try {
+      // In a real implementation, this would call a Firebase Cloud Function
+      // For now, we'll simulate the response
+      
+      // Get the bonus details
+      const bonusesData = await import('../data/bonuses.json');
+      const bonus = bonusesData.default.find((b: any) => b.id === bonusId);
+      
+      if (!bonus) {
+        throw new Error('Bonus not found');
+      }
+      
+      // Check if target player is required
+      if (bonus.effect === 'steals_points' && !targetPlayerId) {
+        throw new Error('Target player is required for this bonus');
+      }
+      
+      // Remove the bonus from the player
+      const updatedBonuses = currentPlayer.bonuses.filter(b => b !== bonusId);
+      
+      // Update the player's bonuses (in a real app, this would be done by the cloud function)
+      const updatedPlayers = gameState.players.map(p => {
+        if (p.id === currentPlayer.id) {
+          return { ...p, bonuses: updatedBonuses, activeBonus: bonus.effect === 'doubles_points' ? 'doubles_points' : p.activeBonus };
+        }
+        return p;
+      });
+      
+      // This is just for the demo - in a real app, the cloud function would update Firestore
+      setGameState(prev => prev ? { ...prev, players: updatedPlayers } : null);
+      
+      return {
+        success: true,
+        effect: bonus.effect
+      };
+    } catch (error) {
+      console.error('Error using bonus:', error);
+      throw error;
+    }
+  };
+  
+  // Acquire a client
+  const acquireClient = async (): Promise<{success: boolean; client?: Client}> => {
+    if (!gameState || !auth.currentUser || !currentPlayer) {
+      throw new Error('Game not active or user not authenticated');
+    }
+    
+    try {
+      // In a real implementation, this would call a Firebase Cloud Function
+      // For now, we'll simulate the response
+      
+      // Check if clients are available
+      if (!gameState.availableClients || gameState.availableClients.length === 0) {
+        // Generate new clients if none are available
+        const clients = [
+          { id: "c1", name: "Elderly patient with hypertension", difficulty: 1, points: 10 },
+          { id: "c2", name: "Child with fever", difficulty: 1, points: 10 },
+          { id: "c3", name: "Adult with allergies", difficulty: 1, points: 10 },
+          { id: "c4", name: "Patient with diabetes", difficulty: 2, points: 15 },
+          { id: "c5", name: "Pregnant woman", difficulty: 2, points: 15 },
+          { id: "c6", name: "Patient with multiple medications", difficulty: 3, points: 20 }
+        ];
+        
+        // Shuffle clients
+        const shuffledClients = [...clients].sort(() => Math.random() - 0.5);
+        
+        // Update game with available clients
+        setGameState(prev => prev ? { ...prev, availableClients: shuffledClients } : null);
+        
+        return await acquireClient(); // Try again now that we have clients
+      }
+      
+      // Get a random client
+      const clientIndex = Math.floor(Math.random() * gameState.availableClients.length);
+      const client = gameState.availableClients[clientIndex];
+      
+      // Remove the client from available clients
+      const newAvailableClients = [...gameState.availableClients];
+      newAvailableClients.splice(clientIndex, 1);
+      
+      // Update the player with the new client
+      const updatedPlayers = gameState.players.map(p => {
+        if (p.id === currentPlayer.id) {
+          return { ...p, currentClient: client };
+        }
+        return p;
+      });
+      
+      // This is just for the demo - in a real app, the cloud function would update Firestore
+      setGameState(prev => prev ? { 
+        ...prev, 
+        availableClients: newAvailableClients,
+        players: updatedPlayers 
+      } : null);
+      
+      return {
+        success: true,
+        client
+      };
+    } catch (error) {
+      console.error('Error acquiring client:', error);
+      throw error;
+    }
   };
 
   const value = {
@@ -178,7 +357,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     joinGame,
     startGame,
     submitAnswer,
-    useBonus
+    useBonus,
+    acquireClient
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
