@@ -1,0 +1,32 @@
+[
+  {
+    "id": "q1",
+    "text": "What is the active ingredient in Aspirin?",
+    "answer": "Acetylsalicylic acid",
+    "points": 10
+  },
+  {
+    "id": "q2",
+    "text": "Which medication class do Lisinopril and Enalapril belong to?",
+    "answer": "ACE inhibitors",
+    "points": 15
+  },
+  {
+    "id": "q3",
+    "text": "What is the primary use of Metformin?",
+    "answer": "Treatment of type 2 diabetes",
+    "points": 10
+  },
+  {
+    "id": "q4",
+    "text": "Which neurotransmitter does Fluoxetine (Prozac) primarily affect?",
+    "answer": "Serotonin",
+    "points": 15
+  },
+  {
+    "id": "q5",
+    "text": "What is the mechanism of action for Omeprazole?",
+    "answer": "Proton pump inhibitor",
+    "points": 20
+  }
+]

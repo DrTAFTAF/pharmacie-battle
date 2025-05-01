@@ -1,0 +1,32 @@
+[
+  {
+    "id": "b1",
+    "name": "Double Points",
+    "effect": "doubles_points",
+    "description": "Double the points for your next correct answer"
+  },
+  {
+    "id": "b2",
+    "name": "Time Extension",
+    "effect": "extends_time",
+    "description": "Add 15 seconds to the timer for the current question"
+  },
+  {
+    "id": "b3",
+    "name": "Skip Question",
+    "effect": "skips_question",
+    "description": "Skip the current question without penalty"
+  },
+  {
+    "id": "b4",
+    "name": "Steal Points",
+    "effect": "steals_points",
+    "description": "Steal 5 points from another player"
+  },
+  {
+    "id": "b5",
+    "name": "Hint",
+    "effect": "provides_hint",
+    "description": "Get a hint for the current question"
+  }
+]

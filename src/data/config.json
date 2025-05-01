@@ -1,0 +1,8 @@
+{
+  "minPlayers": 2,
+  "maxPlayers": 8,
+  "totalRounds": 5,
+  "timePerQuestion": 30,
+  "pointsPerCorrectAnswer": 10,
+  "bonusPoints": 5
+}
