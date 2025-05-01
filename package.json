@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "emulators": "firebase emulators:start",
-    "deploy": "firebase deploy"
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:all": "npm run build && firebase deploy"
   },
   "dependencies": {
     "firebase": "^11.6.1",
